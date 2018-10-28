@@ -1,0 +1,78 @@
+#cloud-config
+# vim: syntax=yaml
+# Documentation: http://cloudinit.readthedocs.io/en/0.7.9/index.html
+
+hostname: pz-master-2
+manage_etc_hosts: true
+
+# You could modify this for your own user information
+users:
+  - name: pi
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: users,docker,video,input
+    plain_text_passwd: k8snet
+    lock_passwd: false
+    ssh_pwauth: true
+    chpasswd: { expire: false }
+
+# Update apt packages on first boot
+package_update: true
+
+write_files:
+  - path: /etc/systemd/system/rc.local.service
+    content: |
+      [Unit]
+      Description=/etc/rc.local
+      ConditionPathExists=/etc/rc.local
+
+      [Service]
+      Type=forking
+      ExecStart=/etc/rc.local start
+      TimeoutSec=0
+      StandardOutput=tty
+      RemainAfterExit=yes
+      SysVStartPriority=99
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/rc.local
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env bash
+      /sbin/iw dev wlan0 set power_save off
+  - path: /etc/network/interfaces.d/wlan0
+    content: |
+      allow-hotplug wlan0
+      iface wlan0 inet auto
+      wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+      iface default inet dhcp
+  - path: /etc/wpa_supplicant/wpa_supplicant.conf
+    content: |
+      country=gb
+      ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+      update_config=1
+      network={
+        ssid="k8snet"
+        psk=ed2f27446c58b547e18075819f6e4c92fe47feeb353d9509f31973065c2603f3
+      }
+  # Kubernetes repo
+  - path: /etc/apt/sources.list.d/kubernetes.list
+    content: |
+      deb https://apt.kubernetes.io/ kubernetes-xenial main
+
+# Run once on first boot only
+runcmd:
+  # enable rc.local
+  - 'systemctl enable rc-local.service'
+  - 'systemctl start rc-local.service'
+  # Pickup the hostname changes
+  - 'systemctl restart avahi-daemon'
+  # Add google apt repo key and install k8s and upgrade all the things
+  - 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add'
+  - 'apt-get update && apt-get upgradet && apt-get install -y kubelet kubeadm kubectl'
+
+power_state:
+  delay: 'now'
+  mode: reboot
+  message: '****  CLOUD-INIT COMPLETED. REBOOTING, PLEASE HOLD ****'
