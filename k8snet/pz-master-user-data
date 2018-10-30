@@ -20,22 +20,19 @@ users:
 package_update: true
 
 write_files:
-  - path: /etc/systemd/system/rc.local.service
+  - path: /etc/systemd/system/rc-local.service
     content: |
       [Unit]
-      Description=/etc/rc.local
-      ConditionPathExists=/etc/rc.local
-
+        Description=/etc/rc.local
+        ConditionPathExists=/etc/rc.local
       [Service]
-      Type=forking
-      ExecStart=/etc/rc.local start
-      TimeoutSec=0
-      StandardOutput=tty
-      RemainAfterExit=yes
-      SysVStartPriority=99
-
+        Type=forking
+        ExecStart=/etc/rc.local
+        TimeoutSec=0
+        StandardOutput=tty
+        RemainAfterExit=yes
       [Install]
-      WantedBy=multi-user.target
+        WantedBy=multi-user.target
   - path: /etc/rc.local
     permissions: '0755'
     content: |
@@ -71,6 +68,8 @@ runcmd:
   # Add google apt repo key and install k8s and upgrade all the things
   - 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add'
   - 'apt-get update && apt-get upgradet && apt-get install -y kubelet kubeadm kubectl'
+  # Prevent kubernetes being updated automatically by apt
+  - 'mv /etc/apt/sources.list.d/kubernetes.list /etc/apt/sources.list.d/kubernetes.list.ignore'
 
 power_state:
   delay: 'now'

@@ -147,8 +147,9 @@ make all WHAT=cmd/kubeadm KUBE_BUILD_PLATFORMS=linux/arm
 make all WHAT=cmd/kubectl KUBE_BUILD_PLATFORMS=linux/arm
 ```
 
-##Kubernetes Masters:
+## Kubernetes
 
+### Installing software
 ```
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
 ```
@@ -168,6 +169,7 @@ apt-get install -y kubelet kubeadm kubectl
 apt-get update && apt-get upgrade -y && apt-get install -y kubelet kubeadm kubernetes-cni kubectl
 ```
 
+### Initialising the first master
 ```
 /kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address 10.0.0.1
 ```
@@ -183,6 +185,12 @@ kubeadm join 10.0.0.115:6443 --token 5c8hud.m9c8utffktjjdjcu --discovery-token-c
 https://kubernetes.io/docs/setup/independent/install-kubeadm/
 
 https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#kubenet
+
+### Installing flannel
+Networking overlay
+```
+https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+```
 
 
 ## JUST US FISH

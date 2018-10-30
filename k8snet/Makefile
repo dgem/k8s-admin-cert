@@ -1,10 +1,19 @@
 SHELL := /bin/bash
 
+# flash --userdata pz-master-1-user-data --ssid "${SSID}" --password "${PSK}" hypriotos-rpi-v1.9.0.img
+
 default: verify
 	# ❌
 	@echo "✓ done"
 
-pz-master-1:
+checkid:
+	test -z "$NODE_ID" && echo "NODE_ID is required (2..)" && exit 1
+
+checkwifi:
+	test -z "${SSID}" && echo "❌ SSID is required (home/office network name)" || echo "✓ wifi ssid ${SSID}"
+	test -z "${PSK}" && echo "❌ PSK is required (home/office network password)" || echo "✓ wifi password set"
+
+pz-master-1: #checkwifi
 	flash --userdata pz-master-1-user-data hypriotos-rpi-v1.9.0.img
 
 pz-master:

@@ -25,20 +25,19 @@ packages:
   - hostapd
 
 write_files:
-  - path: /etc/systemd/system/rc.local.service
+  - path: /etc/systemd/system/rc-local.service
     content: |
       [Unit]
-      Description=/etc/rc.local
-      ConditionPathExists=/etc/rc.local
+        Description=/etc/rc.local
+        ConditionPathExists=/etc/rc.local
       [Service]
-      Type=forking
-      ExecStart=/etc/rc.local start
-      TimeoutSec=0
-      StandardOutput=tty
-      RemainAfterExit=yes
-      SysVStartPriority=99
+        Type=forking
+        ExecStart=/etc/rc.local
+        TimeoutSec=0
+        StandardOutput=tty
+        RemainAfterExit=yes
       [Install]
-      WantedBy=multi-user.target
+        WantedBy=multi-user.target
   # Every (re)boot
   - path: /etc/rc.local
     permissions: '0755'
@@ -56,7 +55,7 @@ write_files:
       clientid
       persistent
       require dhcp_server_identifier
-      option host_name, ntp_servers, option interface_mtu
+      option host_name, ntp_servers, interface_mtu
       option domain_name_servers, domain_name, domain_search
       option rapid_commit, classless_static_routes
   # WIFI connection
@@ -66,8 +65,8 @@ write_files:
       ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
       update_config=1
       network={
-        ssid="Home Network"
-        psk=""Home Password""
+        ssid="home_wifi_ssid"
+        psk="home_wifi_password"
         proto=RSN
         key_mgmt=WPA-PSK
         pairwise=CCMP
@@ -77,14 +76,13 @@ write_files:
   # Static based AP and NAT for k8s network with dnsmasq & hostapd
   - path: /etc/dnsmasq.conf
     content: |
-      no-poll
+      bogus-priv
+      domain-needed
       interface=lo
       listen-address=127.0.0.1
       interface=wlan1
       listen-address=10.0.0.1
       bind-interfaces
-      bogus-priv
-      domain-needed
       dhcp-range=10.0.0.2,10.0.255.255,255.255.0.0,24h
       dhcp-host=pz-master-2,10.0.0.2
       dhcp-host=pz-master-3,10.0.0.3
@@ -120,16 +118,18 @@ write_files:
 
 # Run once on first boot only
 runcmd:
-  # enable rc.local
-  - 'systemctl enable rc-local.service'
-  - 'systemctl start rc-local.service'
+  # enable IP forwarding
+  - 'sysctl -w net.ipv4.ip_forward=1'
+  # enable rc.local (NAT & powersaving off for wifi)
+  - 'systemctl enable rc-local'
+  - 'systemctl start rc-local'
   # Pickup the hostname changes
   - 'systemctl restart avahi-daemon'
   # Add google apt repo key and install k8s and upgrade all the things
   - 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add'
-  - 'apt-get update && apt-get upgradet && apt-get install -y kubelet kubeadm kubectl'
-  # enable IP forwarding
-  - 'sysctl -w net.ipv4.ip_forward=1'
+  - 'apt-get update && apt-get upgrade -y && apt-get install -y kubelet kubeadm kubectl'
+  # Prevent kubernetes being updated automatically by apt
+  - 'mv /etc/apt/sources.list.d/kubernetes.list /etc/apt/sources.list.d/kubernetes.list.ignore'
 
 
 power_state:
